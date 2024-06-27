@@ -9,6 +9,8 @@ use App\Mail\PaymentApprovedMail;
 use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Mail;
+use MercadoPago\Client\Payment\PaymentClient;
+use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Payment as MPayment;
 use Illuminate\Support\Str;
 use MercadoPago\SDK;
@@ -17,7 +19,7 @@ class PaymentService
 {
     public function __construct()
     {
-        SDK::setAccessToken(config('payment.mercadopago.access_token'));
+        MercadoPagoConfig::setAccessToken(config('payment.mercadopago.access_token'));
     }
 
     public function update($external_id): void

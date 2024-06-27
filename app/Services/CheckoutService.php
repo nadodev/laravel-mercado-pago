@@ -7,16 +7,18 @@ use App\Exceptions\PaymentException;
 use App\Models\Order;
 use Database\Seeders\OrderSeeder;
 use Illuminate\Support\Str;
-use MercadoPago\Payer;
+use MercadoPago\Client\Common\RequestOptions;
+use MercadoPago\Client\Payment\PaymentClient;
+use MercadoPago\Exceptions\MPApiException;
+use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Payment;
-use MercadoPago\SDK;
 
 class CheckoutService
 {
 
     public function __construct()
     {
-        SDK::setAccessToken(config('payment.mercadopago.access_token'));
+        MercadoPagoConfig::setAccessToken(config('payment.mercadopago.access_token'));
     }
 
     public function loadCart(): array
@@ -41,46 +43,75 @@ class CheckoutService
 
     public function creditCardPayment($data, $user, $address)
     {
-        $payment = new Payment();
-        $payment->transaction_amount = (float)$data['transaction_amount'];
-        $payment->token = $data['token'];
-        $payment->description = $data['description'];
-        $payment->installments = (int)$data['installments'];
-        $payment->payment_method_id = $data['payment_method_id'];
-        $payment->issuer_id = (int)$data['issuer_id'];
+        try {
 
-        $payment->payer = $this->buildPayer($user, $address);
+        $client = new PaymentClient(); 
 
-        $payment->save();
+            $idempotencyKey = Str::uuid()->toString();
+            $request_options = new RequestOptions();
+            $request_options->setCustomHeaders(["X-Idempotency-Key: $idempotencyKey"]);
 
-        throw_if(
-            !$payment->id || $payment->status === 'rejected',
-            PaymentException::class,
-            $payment?->error?->message ?? "Verifique os dados do cartão"
-        );
+
+            $payment = $client->create([
+                "transaction_amount" =>  (float)$data['transaction_amount'],
+                "token" => $data['token'],
+                "description" => $data['description'],
+                "installments" => (int)$data['installments'],
+                "payment_method_id" => $data['payment_method_id'],
+                "payer" => [
+                 "email" => $user['email'],
+                    "identification" => [
+                        "type" => "cpf",
+                        "number" => $user['cpf']
+                    ],
+                ]
+        ], $request_options);
+
 
         return $payment;
+    } catch (MPApiException $e) {
+        throw new PaymentException("Erro ao conectar com o MercadoPago: " . $e->getMessage());
+    }
     }
 
     public function pixOrBankSlipPayment($data, $user, $address)
     {
-        $payment = new Payment();
-        $payment->transaction_amount = $data['amount'];
-        $payment->description = "Título do produto";
-        $payment->payment_method_id = $data['method'];
-        $payment->payer = $this->buildPayer($user, $address);
 
-        $payment->save();
+        try {
+            $client = new PaymentClient(); 
 
-        throw_if(
-            !$payment->id || $payment->status === 'rejected',
-            PaymentException::class,
-            $payment?->error?->message ?? "Verifique os dados do cartão"
-        );
+            $idempotencyKey = Str::uuid()->toString();
+            $request_options = new RequestOptions();
+            $request_options->setCustomHeaders(["X-Idempotency-Key: $idempotencyKey"]);
 
-        return $payment;
+
+          $payment = $client->create([
+                "transaction_amount" => (float)$data['amount'],
+                "description" => "Título do produto",
+                "payment_method_id" => $data['method'],
+                "payer" => [
+                    "email" => $user['email'],
+                    "identification" => [
+                        "type" => "cpf",
+                        "number" => $user['cpf']
+                    ],
+                    "address" => [
+                        "zip_code" => $address['zipcode'],
+                        "city" =>  $address['city'],
+                        "street_name" => $address['address'],
+                        "street_number" =>  $address['number'],
+                        "neighborhood" =>$address['district'],
+                        "federal_unit" => $address['state']
+                      ]
+                ]
+            ], $request_options);
+
+
+            return $payment;
+        } catch (MPApiException $e) {
+            throw new PaymentException("Erro ao conectar com o MercadoPago: " . $e->getMessage());
+        }
     }
-
     public function buildPayer($user, $address)
     {
         $first_name = explode(' ', $user['name'])[0];

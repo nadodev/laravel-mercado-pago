@@ -1,6 +1,6 @@
 <div>
 
-    <div class="flex flex-col rounded-md border border-primary-200 p-4 divide-y divide-primary-200 divide-opacity-10">
+    <div class="flex flex-col p-4 border divide-y rounded-md border-primary-200 divide-primary-200 divide-opacity-10">
 
         <div class="flex flex-row items-center py-2 gap-x-4">
             <span class="text-sm text-white opacity-10 whitespace-nowrap w-[70px]">Contato</span>
@@ -36,10 +36,10 @@
             @error('payment') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
         </div>
 
-        <div class="mt-4 w-full flex flex-col rounded-md border border-primary-200 p-4 divide-y divide-primary-200 divide-opacity-10">
+        <div class="flex flex-col w-full p-4 mt-4 border divide-y rounded-md border-primary-200 divide-primary-200 divide-opacity-10">
 
             <label
-                    for="credit_card" class="flex flex-row gap-x-4 items-center py-4 cursor-pointer"
+                    for="credit_card" class="flex flex-row items-center py-4 cursor-pointer gap-x-4"
                     @click.prevent="$wire.method = 1; creditCardPayment()"
             >
                 <input
@@ -59,7 +59,7 @@
 
             <label
                 for="pix"
-                class="flex flex-row gap-x-4 items-center py-4 cursor-pointer"
+                class="flex flex-row items-center py-4 cursor-pointer gap-x-4"
             >
                 <input type="radio" name="payment_method" id="pix" value="2" wire:model.live="method">
 
@@ -71,7 +71,7 @@
             <x-checkout.pix-bank-slip-payment-form :method="2" type="pix" />
 
             <label for="bank_slip"
-               class="flex flex-row gap-x-4 items-center py-4 cursor-pointer"
+               class="flex flex-row items-center py-4 cursor-pointer gap-x-4"
             >
                 <input type="radio" name="payment_method" id="bank_slip" value="3" wire:model.live="method">
 

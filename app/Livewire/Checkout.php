@@ -57,6 +57,8 @@ class Checkout extends Component
             $user = $userService->store($this->user->all(), $this->address->all());
             $order = $orderService->update($this->cart['id'], $payment, $user, $this->address->all());
 
+
+
             Mail::to($user->email)->queue(new OrderCreatedMail($order));
 
             $this->responsePayment();
